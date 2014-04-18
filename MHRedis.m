@@ -118,6 +118,78 @@ NSMutableDictionary* data;
         }
     }
     
+    if ([commandName isEqualToString:@"MSET"]){
+        if (((argCount - 1) % 2) == 0 && argCount > 1){
+            return [self MSET:args];
+        } else {
+            return [NSString stringWithFormat:@"(error) ERR wrong number of arguments for '%@' command",commandName];
+        }
+    }
+    
+    if ([commandName isEqualToString:@"MSETNX"]){
+        if (((argCount - 1) % 2) == 0 && argCount > 1){
+            return [self MSETNX:args];
+        } else {
+            return [NSString stringWithFormat:@"(error) ERR wrong number of arguments for '%@' command",commandName];
+        }
+    }
+    
+    if ([commandName isEqualToString:@"SETNX"]){
+        if (argCount == 3){
+            return [self SETNX:args[1]:args[2]];
+        } else {
+            return [NSString stringWithFormat:@"(error) ERR wrong number of arguments for '%@' command",commandName];
+        }
+    }
+    
+    if ([commandName isEqualToString:@"STRLEN"]){
+        if (argCount == 2){
+            return [self STRLEN:args[1]];
+        } else {
+            return [NSString stringWithFormat:@"(error) ERR wrong number of arguments for '%@' command",commandName];
+        }
+    }
+    
+    if ([commandName isEqualToString:@"DEL"]){
+        if (argCount >= 2){
+            return [self DEL:args];
+        } else {
+            return [NSString stringWithFormat:@"(error) ERR wrong number of arguments for '%@' command",commandName];
+        }
+    }
+    
+    if ([commandName isEqualToString:@"EXISTS"]){
+        if (argCount == 2){
+            return [self EXISTS:args[1]];
+        } else {
+            return [NSString stringWithFormat:@"(error) ERR wrong number of arguments for '%@' command",commandName];
+        }
+    }
+    
+    if ([commandName isEqualToString:@"RANDOMKEY"]){
+        if (argCount == 1){
+            return [self RANDOMKEY];
+        } else {
+           return [NSString stringWithFormat:@"(error) ERR wrong number of arguments for '%@' command",commandName];
+        }
+    }
+    
+    if ([commandName isEqualToString:@"RENAME"]){
+        if (argCount == 3){
+            return [self RENAME:args[1]:args[2]];
+        } else {
+          return [NSString stringWithFormat:@"(error) ERR wrong number of arguments for '%@' command",commandName];
+        }
+    }
+    
+    if ([commandName isEqualToString:@"ECHO"]){
+        if (argCount == 2){
+            return [self ECHO:args[1]];
+        } else {
+          return [NSString stringWithFormat:@"(error) ERR wrong number of arguments for '%@' command",commandName];
+        }
+    }
+    
     return [NSString stringWithFormat:@"(error) ERR unknown command '%@'",commandName];
 }
 
@@ -178,6 +250,10 @@ NSMutableDictionary* data;
     } else {
         return false;
     }
+}
+
+-(int)getRandomNumberBetween:(int)from to:(int)to {
+    return (int)from + arc4random() % (to-from+1);
 }
 
 -(NSString*)PING {
@@ -340,4 +416,108 @@ NSMutableDictionary* data;
     }
     return returnValue;
 }
+
+-(NSString*)MSET:(NSArray*)args {
+    for (int i = 1; i < [args count]; i+=2){
+        NSString* key = args[i];
+        NSString* value = args[i + 1];
+        [data setValue:value forKey:key];
+    }
+    return @"OK";
+}
+
+-(NSString*)MSETNX:(NSArray*)args {
+    Boolean exists = false;
+    for (int i = 1; i < [args count]; i+=2){
+        NSString* key = args[i];
+        if ([data valueForKey:key] != NULL){
+            exists = true;
+        }
+    }
+    
+    if (exists){
+    return @"(integer) 0";
+    } else {
+    for (int i = 1; i < [args count]; i+=2){
+        NSString* key = args[i];
+        NSString* value = args[i + 1];
+        [data setValue:value forKey:key];
+    }
+    return @"(integer) 1";
+    }
+}
+
+-(NSString*)SETNX:(NSString*)key:(NSString*)value {
+    NSString* keyValue = [data valueForKey:key];
+    if (keyValue == NULL){
+        [data setValue:key forKey:value];
+        return @"(integer) 1";
+    } else {
+        return @"(integer) 0";
+    }
+}
+
+-(NSString*)STRLEN:(NSString*)key {
+    NSString* value = [data valueForKey:key];
+    if (value == NULL){
+        return @"(integer) 0";
+    } else {
+        return [NSString stringWithFormat:@"(integer) %lu",(unsigned long)[value length]];
+    }
+}
+
+-(NSString*)DEL:(NSArray*)args {
+    int deleted = 0;
+    for (int i = 1; i < [args count]; i++){
+        NSString* value = [data valueForKey:args[i]];
+        if (value == NULL){
+            
+        } else {
+            deleted++;
+            [data removeObjectForKey:args[i]];
+        }
+    }
+    return [NSString stringWithFormat:@"(integer) %d",deleted];
+}
+
+-(NSString*)EXISTS:(NSString*)key {
+    NSString* value = [data valueForKey:key];
+    if (value == NULL){
+        return @"(integer) 0";
+    } else {
+        return @"(integer) 1";
+    }
+}
+
+-(NSString*)RANDOMKEY {
+    if ([[data allKeys] count] == 0){
+        return @"(nil)";
+    } else {
+    int random = [self getRandomNumberBetween:0 to:[[data allKeys] count] - 1];
+        NSArray* array = [data allKeys];
+        return [NSString stringWithFormat:@"\"%@\"",[array objectAtIndex:random]];
+    }
+    
+}
+
+-(NSString*)RENAME:(NSString*)key:(NSString*)newKey {
+    NSString *keyValue = [data valueForKey:key];
+    if ([key isEqualToString:newKey]){
+        return @"(error) ERR source and destination objects are the same";
+    }
+    if (keyValue == NULL){
+        return @"(error) ERR no such key";
+    } else {
+        [data setObject:keyValue forKey:newKey];
+        [data removeObjectForKey:key];
+        return @"OK";
+    }
+}
+
+-(NSString*)ECHO:(NSString*)string {
+    return [NSString stringWithFormat:@"\"%@\"",string];
+}
+
+
+
 @end
