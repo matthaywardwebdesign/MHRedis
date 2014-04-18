@@ -8,17 +8,17 @@ Usage
 
 Firstly 
 
-  "import MHRedis.h"
+    "import MHRedis.h"
   
 And then
 
-  MHRedis* redis = [[MHRedis alloc] init];
-  [redis create];
+    MHRedis* redis = [[MHRedis alloc] init];
+    [redis create];
 
 Running Queries
 =======
 
-  [redis runQuery:@"COMMAND"];
+    [redis runQuery:@"COMMAND"];
   
 Supported Commands
 =======
