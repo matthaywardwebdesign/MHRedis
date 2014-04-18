@@ -8,7 +8,7 @@ Usage
 
 Firstly 
 
-    "import MHRedis.h"
+    import "MHRedis.h"
   
 And then
 
